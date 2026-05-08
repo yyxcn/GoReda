@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   useWallet,
   useConnection,
@@ -11,8 +12,14 @@ import { PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import { Navbar } from "@/components/Navbar";
 import { ProductCard } from "@/components/ProductCard";
-import { PRODUCTS, SELLER_ADDRESS } from "@/lib/constants";
+import { PRODUCTS, SELLER_ADDRESS, solscanTxUrl } from "@/lib/constants";
 import { getProgram, getOrderPDA } from "@/lib/program";
+
+interface PurchaseResult {
+  productId: number;
+  txHash: string;
+  orderPDA: string;
+}
 
 export default function BuyerPage() {
   const router = useRouter();
@@ -22,6 +29,9 @@ export default function BuyerPage() {
   const [purchasingId, setPurchasingId] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [purchaseResult, setPurchaseResult] = useState<PurchaseResult | null>(
+    null
+  );
 
   const categories = [
     "ALL",
@@ -57,9 +67,13 @@ export default function BuyerPage() {
           .rpc();
 
         const [orderPDA] = getOrderPDA(publicKey, productId);
-        router.push(
-          `/order/${orderPDA.toBase58()}?product=${productId}&tx=${sig}`
-        );
+
+        // Show success modal
+        setPurchaseResult({
+          productId,
+          txHash: sig,
+          orderPDA: orderPDA.toBase58(),
+        });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Unknown error";
         if (!msg.includes("User rejected")) {
@@ -69,8 +83,12 @@ export default function BuyerPage() {
         setPurchasingId(null);
       }
     },
-    [publicKey, anchorWallet, connection, router]
+    [publicKey, anchorWallet, connection]
   );
+
+  const purchasedProduct = purchaseResult
+    ? PRODUCTS.find((p) => p.id === purchaseResult.productId)
+    : null;
 
   return (
     <>
@@ -168,6 +186,97 @@ export default function BuyerPage() {
                   I Confirm
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purchase Success Modal */}
+      {purchaseResult && purchasedProduct && (
+        <div className="fixed inset-0 z-50 bg-primary/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface border border-outline-variant/40 w-full max-w-md shadow-2xl">
+            {/* Success header */}
+            <div className="p-8 text-center border-b border-outline-variant/20">
+              <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center mx-auto mb-4">
+                <svg
+                  className="w-8 h-8 text-secondary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h2 className="font-serif text-2xl text-primary mb-2">
+                Order Confirmed
+              </h2>
+              <p className="text-sm text-on-surface-variant">
+                Your purchase has been locked in escrow on Solana.
+              </p>
+            </div>
+
+            {/* Order details */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-20 bg-surface-container-high rounded overflow-hidden relative shrink-0">
+                  <img
+                    src={purchasedProduct.image}
+                    alt={purchasedProduct.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-[0.15em]">
+                    {purchasedProduct.brand}
+                  </p>
+                  <p className="font-serif text-lg text-primary">
+                    {purchasedProduct.name}
+                  </p>
+                  <p className="text-secondary font-bold text-sm">
+                    {purchasedProduct.price} SOL escrowed
+                  </p>
+                </div>
+              </div>
+
+              {/* Tx hash */}
+              <div className="bg-surface-container-low p-3 border border-outline-variant/20">
+                <p className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-[0.15em] mb-1">
+                  Transaction Hash
+                </p>
+                <a
+                  href={solscanTxUrl(purchaseResult.txHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-secondary hover:text-primary font-mono transition-colors break-all"
+                >
+                  {purchaseResult.txHash.slice(0, 32)}...
+                </a>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-6 pt-0 flex gap-3">
+              <button
+                onClick={() => setPurchaseResult(null)}
+                className="flex-1 py-3 border border-outline-variant text-xs font-semibold uppercase tracking-[0.15em] hover:bg-surface-container transition"
+              >
+                Continue Shopping
+              </button>
+              <button
+                onClick={() =>
+                  router.push(
+                    `/order/${purchaseResult.orderPDA}?product=${purchaseResult.productId}&tx=${purchaseResult.txHash}`
+                  )
+                }
+                className="flex-1 py-3 bg-primary text-on-primary text-xs font-semibold uppercase tracking-[0.15em] hover:opacity-80 transition"
+              >
+                View Order
+              </button>
             </div>
           </div>
         </div>

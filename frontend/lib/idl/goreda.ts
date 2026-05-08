@@ -14,6 +14,60 @@ export type Goreda = {
   },
   "instructions": [
     {
+      "name": "closeOrder",
+      "docs": [
+        "Close an already-refunded or completed order to free the PDA."
+      ],
+      "discriminator": [
+        90,
+        103,
+        209,
+        28,
+        7,
+        63,
+        168,
+        4
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "order"
+          ]
+        },
+        {
+          "name": "order",
+          "writable": true
+        },
+        {
+          "name": "escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "order"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "completeOrder",
       "docs": [
         "Buyer confirms delivery. Escrow is released to seller."
@@ -192,7 +246,9 @@ export type Goreda = {
     {
       "name": "refund",
       "docs": [
-        "Instant refund. Allowed before SHIPPED_TO_VALIDATOR."
+        "Instant refund. Allowed before SHIPPED_TO_VALIDATOR.",
+        "close = buyer on both accounts: all lamports (price + rent) returned,",
+        "PDA freed so the same product can be re-purchased."
       ],
       "discriminator": [
         2,

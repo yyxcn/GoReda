@@ -140,7 +140,9 @@ export const VALIDATORS: ValidatorNode[] = [
 // Hardcoded Seller — all products map to one seller for demo
 // ============================================================================
 
-export const SELLER_ADDRESS = "G5jFGXVFUJ3R5QXx8xKnFrTvVwXyZaBcDeFgHiJkLmNo";
+export const SELLER_ADDRESS =
+  process.env.NEXT_PUBLIC_SELLER_ADDRESS ??
+  "G5jFGXVFUJ3R5QXx8xKnFrTvVwXyZaBcDeFgHiJkLmNo";
 
 export const SELLER_INFO = {
   name: "Grand Cru Cellars",

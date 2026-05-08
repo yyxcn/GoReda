@@ -17,7 +17,9 @@ export function Navbar() {
 
   const links = [
     { href: "/buyer", label: "Marketplace" },
-    { href: "/seller", label: "Orders" },
+    { href: "/orders", label: "My Orders" },
+    { href: "/seller", label: "Seller" },
+    { href: "/verify", label: "Verify Business" },
   ];
 
   return (

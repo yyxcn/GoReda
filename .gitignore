@@ -9,3 +9,7 @@ test-ledger
 manual
 .agents/*
 skills-lock.json
+AGENTS.md
+CLAUDE.md
+**/AGENTS.md
+**/CLAUDE.md

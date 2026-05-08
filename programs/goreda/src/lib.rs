@@ -145,32 +145,32 @@ pub mod goreda {
     }
 
     /// Instant refund. Allowed before SHIPPED_TO_VALIDATOR.
+    /// close = buyer on both accounts: all lamports (price + rent) returned,
+    /// PDA freed so the same product can be re-purchased.
     pub fn refund(ctx: Context<Refund>) -> Result<()> {
-        let order = &mut ctx.accounts.order;
+        let order = &ctx.accounts.order;
 
         require!(
             order.status == OrderStatus::Purchased
                 || order.status == OrderStatus::OrderConfirmed,
             GorEdaError::InvalidOrderStatus
         );
+
+        msg!("Order refunded to buyer — accounts closed");
+        Ok(())
+    }
+
+    /// Close an already-refunded or completed order to free the PDA.
+    pub fn close_order(ctx: Context<CloseOrder>) -> Result<()> {
+        let order = &ctx.accounts.order;
+
         require!(
-            order.price == ctx.accounts.escrow.amount,
-            GorEdaError::EscrowAmountMismatch
+            order.status == OrderStatus::Refunded
+                || order.status == OrderStatus::Completed,
+            GorEdaError::InvalidOrderStatus
         );
 
-        let price = order.price;
-
-        refund_escrow(
-            &ctx.accounts.escrow,
-            &ctx.accounts.buyer,
-            price,
-        )?;
-
-        ctx.accounts.escrow.amount = 0;
-        order.status = OrderStatus::Refunded;
-        order.updated_at = Clock::get()?.unix_timestamp;
-
-        msg!("Order refunded to buyer");
+        msg!("Order account closed");
         Ok(())
     }
 }
@@ -257,13 +257,31 @@ pub struct Refund<'info> {
     #[account(mut)]
     pub buyer: Signer<'info>,
 
-    #[account(mut, has_one = buyer)]
+    #[account(mut, has_one = buyer, close = buyer)]
     pub order: Account<'info, Order>,
 
     #[account(
         mut,
         seeds = [b"escrow", order.key().as_ref()],
-        bump = escrow.bump
+        bump = escrow.bump,
+        close = buyer
+    )]
+    pub escrow: Account<'info, EscrowAccount>,
+}
+
+#[derive(Accounts)]
+pub struct CloseOrder<'info> {
+    #[account(mut)]
+    pub buyer: Signer<'info>,
+
+    #[account(mut, has_one = buyer, close = buyer)]
+    pub order: Account<'info, Order>,
+
+    #[account(
+        mut,
+        seeds = [b"escrow", order.key().as_ref()],
+        bump = escrow.bump,
+        close = buyer
     )]
     pub escrow: Account<'info, EscrowAccount>,
 }
