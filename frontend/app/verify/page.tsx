@@ -31,7 +31,7 @@ export default function VerifyBusinessPage() {
               Validate
             </span>
             <h1 className="font-serif text-4xl text-primary">
-              Verify Business
+              Start Business
             </h1>
             <p className="text-sm text-on-surface-variant mt-2 max-w-xl">
               Register as a validator node to verify product authenticity and

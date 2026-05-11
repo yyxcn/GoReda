@@ -19,12 +19,12 @@ export function Navbar() {
     { href: "/buyer", label: "Marketplace" },
     { href: "/orders", label: "My Orders" },
     { href: "/seller", label: "Seller" },
-    { href: "/verify", label: "Verify Business" },
+    { href: "/verify", label: "Business" },
   ];
 
   return (
     <nav className="bg-surface/80 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30">
-      <div className="max-w-[1280px] mx-auto px-6 md:px-16 h-20 flex items-center justify-between">
+      <div className="px-6 md:px-20 h-20 flex items-center justify-between">
         <Link
           href="/"
           className="font-serif text-[32px] tracking-tighter text-primary"
@@ -32,7 +32,7 @@ export function Navbar() {
           GoReda
         </Link>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           {links.map((link) => (
             <Link
               key={link.href}

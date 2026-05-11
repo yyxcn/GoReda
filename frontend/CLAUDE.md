@@ -2,8 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> **Important:** This project uses a potentially non-standard Next.js version with breaking changes. Read `node_modules/next/dist/docs/` before writing Next.js-specific code.
-
 ## Commands
 
 ```bash
@@ -13,7 +11,7 @@ npm run start    # Start production server
 npm run lint     # Run ESLint
 ```
 
-No test framework is configured — this is a demo project.
+No test framework is configured — this is a hackathon demo project.
 
 ## Environment
 
@@ -21,47 +19,71 @@ Requires `.env.local`:
 ```
 NEXT_PUBLIC_RPC_URL=<solana-devnet-rpc>
 NEXT_PUBLIC_PROGRAM_ID=<anchor-program-id>
+NEXT_PUBLIC_SELLER_ADDRESS=<seller-wallet-address>  # optional, has hardcoded fallback
 ```
 
 ## Architecture
 
-**Stack:** Next.js App Router, React 19, TypeScript, Tailwind CSS 4, Solana Web3.js, Anchor 0.32.1, Phantom/Solflare wallet adapters.
+**Stack:** Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, Solana Web3.js, Anchor 0.32, Phantom/Solflare wallet adapters.
 
-### Routing
+**Theme:** Gold/brown wine marketplace aesthetic (primary `#342521`, secondary `#765843`). Fonts: EB Garamond (serif) + Hanken Grotesk (sans).
+
+### Routes
 
 | Route | Purpose |
 |---|---|
 | `/` | Landing page |
 | `/buyer` | Product grid + purchase flow |
-| `/seller` | Seller dashboard — order management + validator selection |
-| `/order/[id]` | Order tracking timeline + refund/advance actions |
+| `/orders` | Buyer's order list with progress bars |
+| `/order/[id]` | Order detail — timeline, refund, complete actions |
+| `/seller` | Seller dashboard — incoming orders (top) + listed products (bottom) |
+| `/verify` | Validator node registration (UI-only, no on-chain logic) |
 
-### Key Directories
+### Key Files
 
-- `app/` — Next.js App Router pages + `providers.tsx` (wallet setup) + `globals.css` (gold theme)
-- `components/` — `Navbar`, `ProductCard`, `OrderTimeline`, `ValidatorSelector`
-- `lib/constants.ts` — All hardcoded demo data: 12 products (all routed to 1 seller), 8 validators with hardcoded distances/stakes
-- `lib/program.ts` — Anchor program client, PDA derivation (`order`, `escrow`), `PROGRAM_ID`
-- `lib/idl/` — Smart contract IDL (`goreda.json` + typed `goreda.ts`)
+- `lib/program.ts` — Anchor client, PDA derivation (`getOrderPDA`, `getEscrowPDA`), order fetching. PDA seeds: order = `["order", buyer, product_id_u64_le]`, escrow = `["escrow", order_pubkey]`.
+- `lib/constants.ts` — 12 hardcoded wine products (all → 1 seller), 8 validator nodes with distances/stakes, `OrderStatusKey` enum, timeline steps.
+- `lib/idl/` — Contract IDL + generated types. Must be updated after `anchor build` by copying from `target/idl/` and `target/types/`.
+- `app/providers.tsx` — Solana wallet adapter setup (Phantom, Solflare). `WalletMultiButton` must use `dynamic()` import to avoid SSR hydration errors.
 
-### Data Flow
+### On-Chain Integration Patterns
 
-1. **Purchase:** `buyer/page.tsx` → `program.methods.purchase()` → navigate to `/order/{orderPDA}?product={id}&tx={hash}`
-2. **Seller actions:** `seller/page.tsx` manages order state transitions and opens `ValidatorSelector` modal
-3. **Order tracking:** `order/[id]/page.tsx` reads events array and renders `OrderTimeline` with Solscan tx links
-4. **Refund:** Buyer clicks refund on `/order/[id]` → animates escrow balance to 0 and wallet balance up
+- **Anchor 0.30+ account resolution:** Signers and PDA accounts are auto-resolved. Only pass non-derivable accounts to `.accounts()` (e.g., `.accounts({ order: orderPDA })`).
+- **Browser-safe PDA derivation:** Use `DataView.setBigUint64()` + `Uint8Array` instead of Node.js `Buffer.writeBigUInt64LE` (not available in browser).
+- **WebSocket-first real-time updates:** Use `connection.onAccountChange()` with debounce (500ms) and stable `useRef` for callbacks. Polling is fallback only.
+- **React hook stability:** Memoize `PublicKey` objects with `useMemo`, use `loadingRef` to prevent duplicate fetches, store callbacks in `useRef` for WebSocket subscriptions.
 
 ### State Machine
 
-`LISTED → PURCHASED → ORDER_CONFIRMED → SHIPPED_TO_VALIDATOR → VALIDATED → SHIPPED_TO_BUYER → DELIVERED → COMPLETED`
+```
+PURCHASED → ORDER_CONFIRMED → SHIPPED_TO_VALIDATOR → VALIDATED → SHIPPED_TO_BUYER → DELIVERED → COMPLETED
+                                                                                                    ↓
+                                                                              REFUNDED (from PURCHASED or ORDER_CONFIRMED)
+```
 
-The `OrderStatus` enum in the frontend must stay in sync with the Anchor contract enum.
+The frontend `OrderStatusKey` type must stay in sync with the Anchor contract's `OrderStatus` enum in `programs/goreda/src/state.rs`.
+
+### Contract Instructions
+
+| Instruction | Signer | When |
+|---|---|---|
+| `purchase` | buyer | Buyer buys product, SOL locked in escrow |
+| `confirmOrder` | seller | Seller acknowledges order |
+| `shipToValidator` | seller | Seller ships to validator node |
+| `shipToBuyer` | validator* | Validator ships to buyer after verification |
+| `completeOrder` | buyer | Buyer confirms delivery, escrow released to seller |
+| `refund` | buyer | Instant refund, closes order + escrow accounts |
+| `closeOrder` | buyer | Close already-refunded/completed order accounts |
+
+*Demo uses seller's wallet as validator_pubkey so the same wallet can call `shipToBuyer`.
 
 ### Demo Assumptions
 
-- All 12 products map to a single hardcoded seller
-- 8 validators with hardcoded distances/stake amounts in `lib/constants.ts`
-- Refund is simulated between `ORDER_CONFIRMED` and `SHIPPED_TO_VALIDATOR`
-- Shipping company is assumed external — tracking numbers are mock-generated
-- No real 7-day timer — `COMPLETED` is triggered by manual button click in demo
-- Devnet only
+- All 12 products map to a single hardcoded seller address
+- 8 validators with hardcoded distances/stake amounts (no real staking)
+- Seller's wallet doubles as validator for demo (passed as `validator_pubkey` in `shipToValidator`)
+- Tracking numbers are mock-generated (`GR-{timestamp}-{validatorId}`)
+- No real 7-day grace period — `completeOrder` is manual button click
+- Devnet only — all Solscan links use `?cluster=devnet`
+- `refund` closes both PDA accounts (order + escrow), allowing same product re-purchase
+- `closeOrder` handles cleanup of previously refunded/completed orders

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Navbar } from "@/components/Navbar";
 
 export default function Home() {
@@ -11,26 +10,28 @@ export default function Home() {
 
       <main>
         {/* Hero */}
-        <header className="relative overflow-hidden bg-primary-fixed/40 min-h-[700px] flex items-center">
-          <Image
-            src="https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=1920&h=800&fit=crop"
-            alt=""
-            fill
-            className="object-cover opacity-10"
-            priority
-          />
+        <header className="relative overflow-hidden bg-primary min-h-[700px] flex items-center">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-30"
+          >
+            <source src="/shopping.mp4" type="video/mp4" />
+          </video>
           <div className="relative z-10 w-full px-6 md:px-16 max-w-[1280px] mx-auto">
             <div className="max-w-2xl">
-              <div className="text-xs font-semibold tracking-[0.15em] text-secondary uppercase mb-3 flex items-center gap-2">
-                <span className="w-8 h-px bg-secondary" />
+              <div className="text-xs font-semibold tracking-[0.15em] text-primary-fixed uppercase mb-3 flex items-center gap-2">
+                <span className="w-8 h-px bg-primary-fixed" />
                 On-Chain Verified Wines
               </div>
-              <h1 className="font-serif text-5xl md:text-7xl text-primary leading-tight mb-6">
+              <h1 className="font-serif text-5xl md:text-7xl text-white leading-tight mb-6">
                 The Art of
                 <br />
                 Decentralized Provenance.
               </h1>
-              <p className="text-lg text-on-surface-variant mb-10 max-w-md leading-relaxed">
+              <p className="text-lg text-white/70 mb-10 max-w-md leading-relaxed">
                 Bridging rare wines with digital integrity through GoReda&apos;s
                 escrow protocol. Curated for those who demand absolute
                 authenticity.
@@ -38,13 +39,13 @@ export default function Home() {
               <div className="flex items-center gap-6">
                 <Link
                   href="/buyer"
-                  className="bg-primary text-on-primary px-10 py-4 text-sm font-medium tracking-[0.05em] hover:opacity-80 transition-colors uppercase"
+                  className="bg-white text-primary px-10 py-4 text-sm font-medium tracking-[0.05em] hover:opacity-90 transition-colors uppercase"
                 >
                   View Collection
                 </Link>
                 <Link
                   href="#how-it-works"
-                  className="border border-primary text-primary px-10 py-4 text-sm font-medium tracking-[0.05em] hover:bg-primary/5 transition-colors uppercase"
+                  className="border border-white/60 text-white px-10 py-4 text-sm font-medium tracking-[0.05em] hover:bg-white/10 transition-colors uppercase"
                 >
                   How It Works
                 </Link>

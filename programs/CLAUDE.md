@@ -4,18 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-Run from the repo root (`/Users/charles/Hackathon/Solana-Frontier/Goreda/`):
+Run from the workspace root (`GoReda/`), not from `programs/`:
 
 ```bash
-anchor build                        # Compile the program
-anchor deploy                       # Deploy to devnet
-anchor test                         # Build + deploy localnet + run tests
-yarn run ts-mocha -p ./tsconfig.json -t 1000000 "tests/**/*.ts"  # Run tests directly
-yarn lint                           # Lint
-yarn lint:fix                       # Lint + autofix
+anchor build                              # Compile → target/deploy/goreda.so + target/idl/goreda.json
+anchor deploy --provider.cluster devnet   # Deploy/upgrade to devnet
+anchor test                               # Build + deploy localnet + run tests
 ```
 
-**Program ID (devnet):** `ASQCCGt2VKtnMCkrTUurr7u49ZcrCMrjL4q4kFsKGCa2`
+After `anchor build`, copy IDL to frontend:
+```bash
+cp target/idl/goreda.json frontend/lib/idl/goreda.json
+cp target/types/goreda.ts frontend/lib/idl/goreda.ts
+```
+
+**Program ID (devnet):** `ASQCCGt2VKtnMCkrTUurr7u49ZcrCMrjL4q4kFsKGCa2`  
+**Upgrade authority:** `~/.config/solana/id.json`  
+**Rust:** 1.89.0 (pinned in `rust-toolchain.toml`), **Anchor:** 0.32.1
 
 ## Architecture
 
@@ -23,45 +28,56 @@ Single Anchor program (`goreda`) with four source files:
 
 | File | Responsibility |
 |---|---|
-| `src/lib.rs` | All 6 instruction handlers + their `Accounts` context structs |
-| `src/state.rs` | `Order` and `EscrowAccount` structs + `OrderStatus` enum |
-| `src/escrow.rs` | `fund_escrow`, `release_escrow`, `refund_escrow` — fund transfer helpers |
+| `src/lib.rs` | 7 instruction handlers + `Accounts` context structs |
+| `src/state.rs` | `Order` (346B) and `EscrowAccount` (49B) structs, `OrderStatus` enum |
+| `src/escrow.rs` | `fund_escrow`, `release_escrow`, `refund_escrow` — lamport transfer helpers |
 | `src/errors.rs` | `GorEdaError` enum (error codes 6000–6007) |
 
 ## PDAs
 
-- **Order:** `[b"order", buyer_pubkey, product_id_le_bytes]`
-- **Escrow:** `[b"escrow", order_pubkey]`
+| Account | Seeds | Notes |
+|---------|-------|-------|
+| Order | `["order", buyer_pubkey, product_id_u64_le]` | One per (buyer, product) pair |
+| Escrow | `["escrow", order_pubkey]` | One per order |
+
+Refund and close_order use `close = buyer` to delete both PDAs, freeing them for re-purchase of the same product.
 
 ## State Machine & Instructions
 
 ```
-→ Purchased(0)        via purchase()          buyer signs; creates both PDAs; locks SOL in escrow
-→ OrderConfirmed(1)   via confirm_order()     seller signs
-→ ShippedToValidator(2) via ship_to_validator()  seller signs; records validator pubkey + tracking number
-→ ShippedToBuyer(4)   via ship_to_buyer()     validator signs; records tracking number
-→ Completed(6)        via complete_order()    buyer signs; releases escrow to seller
-
-OR (early exit, allowed from Purchased or OrderConfirmed only):
-→ Refunded(7)         via refund()            buyer signs; returns escrow to buyer
+purchase(product_id, price)       buyer signs     creates both PDAs, locks SOL via CPI
+confirmOrder()                    seller signs     Purchased → OrderConfirmed
+shipToValidator(pubkey, track#)   seller signs     OrderConfirmed → ShippedToValidator, stores validator
+shipToBuyer(track#)               validator signs  ShippedToValidator → ShippedToBuyer
+completeOrder()                   buyer signs      ShippedToBuyer → Completed, releases escrow to seller
+refund()                          buyer signs      Purchased|OrderConfirmed → closes both PDAs (all lamports returned)
+closeOrder()                      buyer signs      Refunded|Completed → closes both PDAs (cleanup)
 ```
 
-States Validated(3) and Delivered(5) exist in the enum but have no instructions yet.
+States `Validated(3)` and `Delivered(5)` exist in the enum but have no instructions.
 
-## Escrow Fund Transfers
+## Escrow Mechanics
 
-- **`fund_escrow`** — CPI `system_program::transfer` from buyer (signer) into the escrow PDA during `purchase`
-- **`release_escrow`** / **`refund_escrow`** — Direct lamport manipulation (not CPI) because the escrow PDA is program-owned; system_program cannot sign for it
+- **fund_escrow**: CPI `system_program::transfer` from buyer (signer) → escrow PDA. Works because buyer is a signer.
+- **release_escrow**: Direct lamport manipulation, escrow PDA → seller. Must be direct because program-owned PDAs can't use system_program::transfer.
+- **refund**: Uses Anchor's `close = buyer` constraint — automatically returns ALL lamports (price + rent) to buyer. The `refund_escrow` function in escrow.rs exists but is no longer called.
 
-## Authorization Pattern
+## Authorization
 
-Each instruction uses `has_one` constraints on the `Order` account to enforce role-based access:
-- `has_one = seller` — only the recorded seller can call seller instructions
-- `has_one = buyer` — only the recorded buyer can call buyer instructions
-- `has_one = validator` — only the recorded validator can call `ship_to_buyer`
+Each instruction uses `has_one` constraints on the Order account:
+- `has_one = seller` — confirm_order, ship_to_validator
+- `has_one = buyer` — complete_order, refund, close_order
+- `has_one = validator` — ship_to_buyer
 
-The `validator` field on `Order` is `Pubkey::default()` until `ship_to_validator` assigns it.
+The `validator` field is `Pubkey::default()` until `ship_to_validator` sets it. In the demo, seller's wallet is passed as validator_pubkey so the same wallet can call both seller and validator instructions.
+
+## Demo Shortcuts
+
+- Seller's wallet doubles as validator (no on-chain validator registry or staking)
+- No validation/rejection logic — goes directly from ShippedToValidator → ShippedToBuyer
+- No 7-day auto-complete — buyer manually clicks completeOrder
+- Product metadata is off-chain; only product_id stored on-chain
 
 ## Test Status
 
-`tests/goreda.ts` is a stub calling a non-existent `initialize()` instruction. Tests need to be rewritten against the actual instructions: `purchase`, `confirm_order`, `ship_to_validator`, `ship_to_buyer`, `complete_order`, `refund`.
+`tests/goreda.ts` is a stub. Tests need rewriting against actual instructions.
