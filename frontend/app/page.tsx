@@ -80,7 +80,7 @@ export default function Home() {
                   Validator Verification
                 </h3>
                 <p className="text-base text-on-surface-variant leading-relaxed">
-                  A staked validator node (100+ SOL) receives and authenticates
+                  A staked validator node (500+ SOL) receives and authenticates
                   the bottle. Every step is recorded as an on-chain transaction.
                 </p>
               </div>
@@ -108,7 +108,7 @@ export default function Home() {
               </p>
             </div>
             <div>
-              <p className="font-serif text-4xl text-primary">100 SOL</p>
+              <p className="font-serif text-4xl text-primary">500 SOL</p>
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-on-surface-variant mt-1">
                 Min Validator Stake
               </p>
@@ -144,7 +144,7 @@ export default function Home() {
                 <li>Instant refund in 1 transaction (&lt;3 seconds)</li>
                 <li>Automatic escrow settlement via smart contract</li>
                 <li>Every step recorded on Solana &mdash; Solscan proof</li>
-                <li>Validator nodes authenticate bottles, staked 100+ SOL</li>
+                <li>Validator nodes authenticate bottles, staked 500+ SOL</li>
               </ul>
             </div>
           </div>

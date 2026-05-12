@@ -3,19 +3,32 @@
 import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Navbar } from "@/components/Navbar";
-import { VALIDATORS, formatDistance } from "@/lib/constants";
+import { formatDistance } from "@/lib/constants";
+import { useValidators } from "@/lib/ValidatorContext";
 
 // ---------------------------------------------------------------------------
 // Verify Business — UI-only validator node registration page
 // ---------------------------------------------------------------------------
 export default function VerifyBusinessPage() {
   const { publicKey } = useWallet();
+  const { validators, addValidator } = useValidators();
   const [nodeName, setNodeName] = useState("");
-  const [stakeAmount, setStakeAmount] = useState("100");
+  const [stakeAmount, setStakeAmount] = useState("500");
   const [location, setLocation] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const handleRegister = () => {
+    if (!publicKey || !nodeName || Number(stakeAmount) < 500) return;
+    const newNode = {
+      id: validators.length + 1,
+      name: nodeName,
+      address: publicKey.toBase58(),
+      distance: 100, // 0.1 km
+      stake: Number(stakeAmount),
+      uptime: 100.0,
+      location: location || "Unknown",
+    };
+    addValidator(newNode);
     setSubmitted(true);
   };
 
@@ -47,7 +60,7 @@ export default function VerifyBusinessPage() {
               {
                 step: "01",
                 title: "Stake SOL",
-                desc: "Stake a minimum of 100 SOL to register your node. Your stake acts as collateral — if you approve a counterfeit product, your stake gets slashed.",
+                desc: "Stake a minimum of 500 SOL to register your node. Your stake acts as collateral — if you approve a counterfeit product, your stake gets slashed.",
               },
               {
                 step: "02",
@@ -190,13 +203,13 @@ export default function VerifyBusinessPage() {
                     </label>
                     <input
                       type="number"
-                      min="100"
+                      min="500"
                       value={stakeAmount}
                       onChange={(e) => setStakeAmount(e.target.value)}
                       className="w-full px-4 py-3 border border-outline-variant/40 text-sm text-primary focus:outline-none focus:border-primary transition"
                     />
                     <p className="text-[10px] text-on-surface-variant mt-1.5">
-                      Minimum 100 SOL required. Higher stakes attract more
+                      Minimum 500 SOL required. Higher stakes attract more
                       sellers.
                     </p>
                   </div>
@@ -231,7 +244,7 @@ export default function VerifyBusinessPage() {
                   {/* Submit */}
                   <button
                     onClick={handleRegister}
-                    disabled={!nodeName || Number(stakeAmount) < 100}
+                    disabled={!nodeName || Number(stakeAmount) < 500}
                     className="w-full py-3.5 bg-primary text-on-primary text-xs font-semibold uppercase tracking-[0.15em] hover:opacity-80 transition disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Register Validator Node — Stake {stakeAmount} SOL
@@ -249,11 +262,11 @@ export default function VerifyBusinessPage() {
             {/* Active validators */}
             <div>
               <h2 className="text-xs font-semibold uppercase tracking-[0.15em] text-on-surface-variant mb-6">
-                Active Validator Nodes ({VALIDATORS.length})
+                Active Validator Nodes ({validators.length})
               </h2>
 
               <div className="space-y-3">
-                {VALIDATORS.map((v) => (
+                {validators.map((v) => (
                   <div
                     key={v.id}
                     className="border border-outline-variant/30 bg-white p-4 flex items-center gap-4"
@@ -301,7 +314,7 @@ export default function VerifyBusinessPage() {
               <div className="mt-6 grid grid-cols-3 gap-3">
                 <div className="border border-outline-variant/30 bg-white p-4 text-center">
                   <p className="font-serif text-2xl text-primary">
-                    {VALIDATORS.length}
+                    {validators.length}
                   </p>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-on-surface-variant mt-1">
                     Active Nodes
@@ -309,7 +322,7 @@ export default function VerifyBusinessPage() {
                 </div>
                 <div className="border border-outline-variant/30 bg-white p-4 text-center">
                   <p className="font-serif text-2xl text-secondary">
-                    {VALIDATORS.reduce((a, v) => a + v.stake, 0).toLocaleString()}
+                    {validators.reduce((a, v) => a + v.stake, 0).toLocaleString()}
                   </p>
                   <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-on-surface-variant mt-1">
                     Total Staked (SOL)
@@ -318,8 +331,8 @@ export default function VerifyBusinessPage() {
                 <div className="border border-outline-variant/30 bg-white p-4 text-center">
                   <p className="font-serif text-2xl text-primary">
                     {(
-                      VALIDATORS.reduce((a, v) => a + v.uptime, 0) /
-                      VALIDATORS.length
+                      validators.reduce((a, v) => a + v.uptime, 0) /
+                      validators.length
                     ).toFixed(1)}
                     %
                   </p>

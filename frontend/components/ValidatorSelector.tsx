@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import {
-  VALIDATORS,
   formatDistance,
   type ValidatorNode,
 } from "@/lib/constants";
+import { useValidators } from "@/lib/ValidatorContext";
 
 interface ValidatorSelectorProps {
   onSelect: (validator: ValidatorNode) => void;
@@ -18,6 +18,7 @@ export function ValidatorSelector({
   onClose,
   isOpen,
 }: ValidatorSelectorProps) {
+  const { validators } = useValidators();
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   if (!isOpen) return null;
@@ -51,7 +52,7 @@ export function ValidatorSelector({
 
         {/* List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
-          {VALIDATORS.map((v) => {
+          {validators.map((v) => {
             const selected = selectedId === v.id;
             return (
               <button
@@ -97,7 +98,7 @@ export function ValidatorSelector({
           <button
             onClick={() => {
               if (selectedId) {
-                const v = VALIDATORS.find((v) => v.id === selectedId)!;
+                const v = validators.find((v) => v.id === selectedId)!;
                 onSelect(v);
                 onClose();
                 setSelectedId(null);
