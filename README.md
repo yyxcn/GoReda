@@ -1,5 +1,7 @@
 # GoReda - On-Chain Escrow Marketplace 
 
+![Page](docs/assets/page.png)
+
 > Staked validator nodes physically inspect goods, and every shipping milestone is recorded on-chain. A Solana P2P commerce protocol built for the **Solana Frontier Hackathon**.
 
 ## Why GoReda?
@@ -30,7 +32,7 @@ The luxury goods market loses **$4.5 trillion annually** to counterfeits and fra
 ## Architecture
 
 ### Three Actors
-![image.png](attachment:ba155b63-645f-4290-81fa-aa3947984adc:image.png)
+![Architecture](docs/assets/architecture.png)
 ```
   BUYER                      SELLER                    VALIDATOR NODE
     |                          |                            |
