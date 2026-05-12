@@ -226,12 +226,3 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### 5. Demo Walkthrough
-
-1. **Connect Phantom wallet** (set to Devnet)
-2. **Browse products** at `/buyer` and purchase a wine
-3. **Switch to seller wallet** and go to `/seller` to confirm the order
-4. **Watch real-time tracking** update on the buyer's order page
-5. **Try instant refund** before shipping — funds return in ~3 seconds
-6. **Register a validator node** at `/verify` with 500+ SOL stake
