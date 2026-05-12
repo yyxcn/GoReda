@@ -14,3 +14,6 @@ CLAUDE.md
 **/AGENTS.md
 **/CLAUDE.md
 docs/ReadDocs.md
+docs/generate_ppt.py
+docs/*.pptx
+.venv
