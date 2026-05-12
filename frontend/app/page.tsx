@@ -24,7 +24,7 @@ export default function Home() {
             <div className="max-w-2xl">
               <div className="text-xs font-semibold tracking-[0.15em] text-primary-fixed uppercase mb-3 flex items-center gap-2">
                 <span className="w-8 h-px bg-primary-fixed" />
-                On-Chain Verified Wines
+                On-Chain Verified Marketplace
               </div>
               <h1 className="font-serif text-5xl md:text-7xl text-white leading-tight mb-6">
                 The Art of
@@ -32,7 +32,7 @@ export default function Home() {
                 Decentralized Provenance.
               </h1>
               <p className="text-lg text-white/70 mb-10 max-w-md leading-relaxed">
-                Bridging rare wines with digital integrity through GoReda&apos;s
+                Bridging products with digital integrity through GoReda&apos;s
                 escrow protocol. Curated for those who demand absolute
                 authenticity.
               </p>
@@ -130,7 +130,7 @@ export default function Home() {
                 The Problem
               </p>
               <ul className="space-y-3 text-base text-on-surface-variant">
-                <li>Counterfeit wines &mdash; no proof of authenticity</li>
+                <li>Counterfeit products &mdash; no proof of authenticity</li>
                 <li>Refunds take up to 7 days through intermediaries</li>
                 <li>No verifiable shipping trail for fragile bottles</li>
                 <li>Broken cold-chain with zero accountability</li>
@@ -157,7 +157,7 @@ export default function Home() {
               On-Chain Trust Engine
             </h2>
             <p className="text-lg text-on-surface-variant max-w-2xl mb-12 leading-relaxed">
-              GoReda uses programmable escrow to ensure your wines are authentic
+              GoReda uses programmable escrow to ensure your products are authentic
               and delivered before funds are released. Commerce, reimagined for
               the digital age.
             </p>
